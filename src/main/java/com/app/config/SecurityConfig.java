@@ -1,5 +1,7 @@
 package com.app.config;
 
+import com.app.persistence.repository.UserRepository;
+import com.app.service.UserDetailServiceImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -29,7 +31,7 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
- /*   @Bean
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
@@ -37,23 +39,27 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorizeRequests -> {
                     //Endpoints publicos
-                    authorizeRequests.requestMatchers(HttpMethod.GET, "/auth/hello").permitAll();
+                    authorizeRequests.requestMatchers(HttpMethod.GET, "/auth/get").permitAll();
                     // Endpoints privados
-                    authorizeRequests.requestMatchers(HttpMethod.GET, "/auth/hello-secured").hasAuthority("CREATE");
+                    authorizeRequests.requestMatchers(HttpMethod.POST, "/auth/post").hasAnyAuthority("CREATE", "READ");
+                    authorizeRequests.requestMatchers(HttpMethod.PATCH, "/auth/patch").hasAuthority("REFACTOR");
+
+                    authorizeRequests.requestMatchers(HttpMethod.PUT, "/auth/put").hasRole("ADMIN");
+                    authorizeRequests.requestMatchers(HttpMethod.DELETE, "/auth/delete").hasAnyRole("ADMIN", "DEVELOPER");
                     // Endpoints NO ESPECIFICADOS
                     authorizeRequests.anyRequest().denyAll();
                 })
                 .build();
-    }*/
+    }
 
-    @Bean
+ /*   @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
                 .httpBasic(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .build();
-    }
+    }*/
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
@@ -61,32 +67,16 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationProvider authenticationProvider() {
+    public AuthenticationProvider authenticationProvider(UserDetailServiceImpl userDetailService) {
         DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
         authenticationProvider.setPasswordEncoder(passwordEncoder());
-        authenticationProvider.setUserDetailsService(userDetailsService());
+        authenticationProvider.setUserDetailsService(userDetailService);
         return authenticationProvider;
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return NoOpPasswordEncoder.getInstance();
+        return new BCryptPasswordEncoder();
     }
-
-    @Bean
-    public UserDetailsService userDetailsService() {
-        List<UserDetails> userDetails = List.of(User.withUsername("raxody")
-                .password("root")
-                .roles("ADMIN")
-                .authorities("READ", "CREATE")
-                .build(),
-                User.withUsername("juan")
-                .password("root")
-                .roles("USER")
-                .authorities("READ")
-                .build());
-        return new InMemoryUserDetailsManager(userDetails);
-    }
-
 
 }
